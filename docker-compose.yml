@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: hypermemory
+      POSTGRES_PASSWORD: hypermemory
+      POSTGRES_DB: hypermemory
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - hypermemory_pg:/var/lib/postgresql/data
+
+volumes:
+  hypermemory_pg:

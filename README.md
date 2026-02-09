@@ -52,42 +52,67 @@ Assistant responds with evidence
 Checkpoint -> rollup tagged items -> rebuild indexes
 ```
 
-## Quickstart (local install)
+## Quickstart (full distro)
 
 ### Prereqs
 - Ubuntu 24.04+ (or similar)
 - Python 3.10+
-- Postgres 14+ with `pgvector`
+- Docker (recommended for Postgres+pgvector)
 - NVIDIA GPU + CUDA (optional but recommended)
 
-### 1) Create the workspace
+### 1) Clone
 
 ```bash
-mkdir -p ~/clawd
-cd ~/clawd
-mkdir -p memory
+git clone https://github.com/lzchino/HyperMemory.git
+cd HyperMemory
 ```
 
-### 2) Install SQLite FTS indexer (exact retrieval)
+### 2) Install Python deps
 
-You can use the scripts from this repo (see `scripts/ftS/`) or wire your own. The key deliverable is:
-- `memory/supermemory.sqlite` built from `memory/*.md` + `MEMORY.md`.
+```bash
+./scripts/install.sh
+```
 
-### 3) Install the CUDA embedding service (mf-embeddings)
+### 3) Start Postgres+pgvector
 
-See `docs/mf-embeddings.md`.
+```bash
+docker compose up -d
+export DATABASE_URL='postgresql://hypermemory:hypermemory@127.0.0.1:5432/hypermemory'
+```
 
-It exposes:
-- `GET  /health`
-- `POST /embed` (OpenAI-style-ish) returning vectors
+### 4) Start the local embeddings server
 
-### 4) Install pgvector semantic layer
+```bash
+./scripts/run-embeddings.sh
+curl -s http://127.0.0.1:8080/health
+```
 
-See `docs/pgvector.md`.
+### 5) Create a workspace (example)
 
-### 5) Wire guardrails + retrieval ordering
+```bash
+mkdir -p memory
+cp -a examples/workspace/memory/2026-02-09.md.example memory/2026-02-09.md
+cp -a examples/workspace/MEMORY.md.example MEMORY.md
+```
 
-See `docs/guardrails.md`.
+### 6) Index + retrieve
+
+```bash
+./scripts/memory-index.sh
+./scripts/memory-retrieve.sh auto "vector api service" --no-hybrid
+
+# semantic
+python3 ./scripts/hypermemory_cuda_vector_index.py --repo . --daily-days 7
+python3 ./scripts/hypermemory_cuda_vector_search.py "vector api service" --limit 5
+```
+
+### 7) Benchmark
+
+```bash
+./scripts/benchmark.sh .
+```
+
+More: `docs/demo.md`
 
 ## Benchmarks (from a real deployment)
 

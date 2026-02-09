@@ -1,0 +1,17 @@
+[Unit]
+Description=mf-embeddings (HyperMemory local CUDA embeddings)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/HyperMemory
+ExecStart=%h/HyperMemory/.venv/bin/python3 %h/HyperMemory/scripts/server.py
+Environment=EMBED_HOST=127.0.0.1
+Environment=EMBED_PORT=8080
+Environment=EMBED_MODEL_ID=intfloat/e5-small-v2
+Environment=EMBED_DEVICE=cuda
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target
