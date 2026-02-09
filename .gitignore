@@ -1,0 +1,26 @@
+# Secrets / local config
+*.env
+.env*
+**/vector.env
+**/hosts.yml
+
+# Private memory content
+memory/
+MEMORY.md
+memory/**/*.md
+memory/**/*.json
+memory/**/*.jsonl
+
+# Local caches
+__pycache__/
+*.pyc
+.cache/
+
+# Node/npm
+node_modules/
+
+# DB artifacts
+*.sqlite
+
+# OS
+.DS_Store
