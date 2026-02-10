@@ -75,6 +75,9 @@ def run_doctor(workspace: Path) -> DoctorReport:
                 checks["cloud_connect"] = False
                 checks["cloud_error"] = str(e)[:200]
 
+    # Recommendations
+    checks["recommend_entity_index"] = not _exists(mem_dir / "entity.sqlite")
+
     ok = bool(checks["memory_dir"]) and bool(checks["sqlite_fts"])
     return DoctorReport(workspace=str(ws), ok=ok, checks=checks)
 

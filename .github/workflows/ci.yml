@@ -33,6 +33,12 @@ jobs:
           ./scripts/memory-index.sh || true
           MIN_RECALL=100 ./scripts/memory-eval.sh ./tests/fixture-workspace --fast
 
+      - name: Retrieve smoke (non-fast)
+        run: |
+          # build deterministic entity index and run a targeted retrieval query
+          python3 -c "from hypermemory.entity_index import build_entity_index; from pathlib import Path; print(build_entity_index(Path('./tests/fixture-workspace')))"
+          python3 -c "from hypermemory.__main__ import main; import sys; sys.exit(main(['--workspace','./tests/fixture-workspace','retrieve','auto','what port is vector-api.service on?']))" | head -n 20
+
       - name: Entity index smoke
         run: |
           python3 -c "from hypermemory.entity_index import build_entity_index; from pathlib import Path; print(build_entity_index(Path('./tests/fixture-workspace')))"

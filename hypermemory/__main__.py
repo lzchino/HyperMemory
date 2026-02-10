@@ -46,6 +46,17 @@ def cmd_index(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_search(args: argparse.Namespace) -> int:
+    from .search import search_fts
+
+    cfg = Config.from_env(args.workspace)
+    q = args.query
+    hits = search_fts(cfg.workspace, q, limit=int(args.limit))
+    for h in hits:
+        print(f"{h.source} | {h.source_key} | {h.chunk_ix} | {h.snippet}")
+    return 0
+
+
 def cmd_retrieve(args: argparse.Namespace) -> int:
     from .retrieval import retrieve
 
@@ -166,6 +177,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("index", help="Build/update local indexes")
     s.set_defaults(func=cmd_index)
+
+    s = sub.add_parser("search", help="SQLite FTS search")
+    s.add_argument("query")
+    s.add_argument("--limit", type=int, default=20)
+    s.set_defaults(func=cmd_search)
 
     s = sub.add_parser("retrieve", help="Run retrieval")
     s.add_argument("mode", choices=["auto", "targeted", "broad"])

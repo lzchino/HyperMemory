@@ -83,7 +83,16 @@ def rrf_score(ranks: dict[str, int], k: float = 60.0) -> float:
 
 
 def entity_layer(workspace: Path, query: str, limit: int = 8) -> list[tuple[str, str]]:
-    from .entity_index import search_entities
+    """Entity index layer.
+
+    If the index is missing, return a single low-signal hint so operators know
+    what to do (but don't crash retrieval).
+    """
+
+    from .entity_index import db_path, search_entities
+
+    if not db_path(workspace).exists():
+        return [("entity:missing", "(hint) run: hypermemory entity index")]
 
     hits = search_entities(workspace, query, limit=limit)
     out: list[tuple[str, str]] = []

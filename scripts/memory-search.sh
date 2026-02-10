@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Back-compat wrapper. Prefer: hypermemory search (not yet implemented)
-# This retains the old behavior: direct SQLite FTS query.
+# Back-compat wrapper. Prefer: hypermemory search
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORKSPACE="${OPENCLAW_WORKSPACE:-$ROOT}"
-DB="$WORKSPACE/memory/supermemory.sqlite"
 QUERY="${1:-}"
 
 if [[ -z "$QUERY" ]]; then
@@ -14,19 +12,8 @@ if [[ -z "$QUERY" ]]; then
   exit 2
 fi
 
-if [[ ! -f "$DB" ]]; then
-  echo "Missing FTS DB: $DB (run ./scripts/memory-index.sh)" >&2
-  exit 1
-fi
+# shellcheck disable=SC1091
+source "$ROOT/.venv/bin/activate" 2>/dev/null || true
 
-# Escape double quotes for an FTS5 phrase query and wrap in quotes.
-Q_ESC=${QUERY//\"/\"\"}
-MATCH="\"$Q_ESC\""
-
-sqlite3 -separator ' | ' "$DB" "
-SELECT source, source_key, chunk_ix, substr(text,1,140)
-FROM entry_fts
-WHERE entry_fts MATCH '$MATCH'
-ORDER BY rank
-LIMIT 20;
-"
+python3 -c 'from hypermemory.__main__ import main; import sys; sys.exit(main(sys.argv[1:]))' \
+  --workspace "$WORKSPACE" search "$QUERY"
