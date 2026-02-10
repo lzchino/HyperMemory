@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """SQLite FTS indexer (deterministic, derived index).
 
-This is the Python-first equivalent of scripts/supermemory_index.py.
+Historical note: this replaces the older `scripts/supermemory_index.py`.
 
 Source of truth:
 - <workspace>/MEMORY.md
