@@ -59,7 +59,7 @@ def cmd_retrieve(args: argparse.Namespace) -> int:
     cfg = Config.from_env(args.workspace)
     hits = retrieve(cfg.workspace, args.query, mode=args.mode, limit=10)
     for h in hits:
-        print(f"[{h.layer}] {h.snippet}")
+        print(f"[{h.score:.4f}] {h.why} {h.snippet}")
     return 0
 
 

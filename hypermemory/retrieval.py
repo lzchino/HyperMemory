@@ -14,6 +14,7 @@ class RetrievalHit:
     layer: str
     score: float
     snippet: str
+    why: str
 
 
 _TARGETED_RX = re.compile(r"(?i)\b(gid|id\s+for|what\s+is\s+the|where\s+is|port|:([0-9]{2,5})|config|token|key|password|path)\b")
@@ -27,11 +28,38 @@ def detect_mode(query: str) -> str:
     return "broad"
 
 
-def bm25_layer(workspace: Path, query: str, limit: int = 10) -> list[RetrievalHit]:
-    hits: list[RetrievalHit] = []
-    for h in bm25_search(workspace, query, limit=limit):
-        hits.append(RetrievalHit(layer=f"bm25:{h.path}", score=float(h.score), snippet=h.snippet))
-    return hits
+def bm25_layer(workspace: Path, query: str, limit: int = 10) -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    for i, h in enumerate(bm25_search(workspace, query, limit=limit), 1):
+        out.append((f"bm25:{h.path}#{i}", h.snippet))
+    return out
+
+
+def fts_layer(workspace: Path, query: str, limit: int = 20) -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    for i, h in enumerate(fts_search(workspace, query, limit=limit), 1):
+        out.append((f"fts:{h.source}:{h.source_key}#{h.chunk_ix}", h.text))
+    return out
+
+
+def cloud_layer(query: str, limit: int = 8) -> list[tuple[str, str]]:
+    if os.environ.get("HYPERMEMORY_CLOUD_FALLBACK", "0") != "1":
+        return []
+    if not os.environ.get("HYPERMEMORY_CLOUD_DATABASE_URL"):
+        return []
+
+    from .cloud_pgvector import CloudConfig, search_curated
+
+    cfg = CloudConfig.from_env()
+    lines = search_curated(cfg, query, limit=limit)
+    out: list[tuple[str, str]] = []
+    for i, line in enumerate(lines, 1):
+        out.append((f"cloud:{i}", line))
+    return out
+
+
+def rrf_score(ranks: dict[str, int], k: float = 60.0) -> float:
+    return sum(1.0 / (k + float(r)) for r in ranks.values())
 
 
 def retrieve(workspace: Path, query: str, mode: str = "auto", limit: int = 10) -> list[RetrievalHit]:
@@ -39,19 +67,35 @@ def retrieve(workspace: Path, query: str, mode: str = "auto", limit: int = 10) -
     if mode == "auto":
         mode = detect_mode(query)
 
-    # 1) FTS exact
-    fts_hits: list[FtsHit] = fts_search(ws, query, limit=limit)
+    # Local-first layers
+    fts = fts_layer(ws, query, limit=20)
+    bm25 = bm25_layer(ws, query, limit=10)
+    cloud = cloud_layer(query, limit=8)
 
-    # 2) Local vector (optional) - keep in shell for now
-    # We intentionally do NOT index raw dailies semantically; only curated+distilled in future refactor.
+    items: dict[str, dict] = {}
 
-    # 3) BM25 fallback
-    bm25_hits = bm25_layer(ws, query, limit=limit)
+    def add(layer: str, rank: int, key: str, snippet: str):
+        it = items.get(key)
+        if not it:
+            it = {"snippet": snippet, "ranks": {}}
+            items[key] = it
+        it["ranks"][layer] = min(rank, it["ranks"].get(layer, 10**9))
+        if snippet and (not it["snippet"] or len(snippet) > len(it["snippet"])):
+            it["snippet"] = snippet
 
-    # Basic fusion: prefer FTS first, then BM25
-    fused: list[RetrievalHit] = []
-    for h in fts_hits:
-        fused.append(RetrievalHit(layer=f"fts:{h.source}:{h.source_key}#{h.chunk_ix}", score=1.0, snippet=h.text))
-    fused.extend(bm25_hits)
+    for r, (key, snip) in enumerate(fts, 1):
+        add("fts", r, key, snip)
+    for r, (key, snip) in enumerate(bm25, 1):
+        add("bm25", r, key, snip)
+    for r, (key, snip) in enumerate(cloud, 1):
+        add("cloud", r, key, snip)
 
-    return fused[:limit]
+    scored: list[RetrievalHit] = []
+    for key, it in items.items():
+        ranks = it["ranks"]
+        score = rrf_score(ranks)
+        why = " ".join(f"{k}:{v}" for k, v in sorted(ranks.items()))
+        scored.append(RetrievalHit(layer=key, score=score, snippet=str(it["snippet"]), why=why))
+
+    scored.sort(key=lambda h: h.score, reverse=True)
+    return scored[:limit]
