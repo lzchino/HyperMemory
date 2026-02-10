@@ -33,12 +33,16 @@ HyperMemory will index these.
 
 ```bash
 ./scripts/memory-index.sh /path/to/workspace
+# or (python-first):
+hypermemory --workspace /path/to/workspace index
 ```
 
 ## 5) Retrieve
 
 ```bash
 OPENCLAW_WORKSPACE=/path/to/workspace ./scripts/memory-retrieve.sh auto "vector-api.service"
+# or:
+hypermemory --workspace /path/to/workspace retrieve auto "vector-api.service"
 ```
 
 ## 6) Guardrails workflow

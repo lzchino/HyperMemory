@@ -21,6 +21,9 @@ source "$VENV/bin/activate"
 pip install -U pip wheel >/dev/null
 pip install -r "$ROOT/requirements.txt"
 
+# Install this package (provides `hypermemory` CLI)
+pip install -e "$ROOT" >/dev/null
+
 if ! $EMBED_ONLY; then
   cat <<'TXT'
 

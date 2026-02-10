@@ -28,4 +28,4 @@ fi
 
 echo ""
 echo "== retrieval =="
-"$ROOT/scripts/memory-retrieve.sh" auto "$QUERY" --hybrid || true
+"$ROOT/scripts/memory-retrieve.sh" auto "$QUERY" || true

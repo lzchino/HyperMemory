@@ -41,7 +41,7 @@ IDs/paths/ports, where something is, etc.), do NOT guess.
 
 - Run:
   OPENCLAW_WORKSPACE=/home/<user>/<workspace> \
-    bash /opt/hypermemory/scripts/retrieval/memory-retrieve.sh auto "<query>" --no-hybrid
+    bash /opt/hypermemory/scripts/retrieval/memory-retrieve.sh auto "<query>"
 
 3) After meaningful work:
 

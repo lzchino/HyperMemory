@@ -68,7 +68,7 @@ fi
 
 # 3) FTS index exists
 if [[ ! -f "$DB" ]]; then
-  say "GAP: missing SQLite index ($DB). Run: python3 scripts/supermemory_index.py --repo <ws>"
+  say "GAP: missing SQLite index ($DB). Run: ./scripts/memory-index.sh <ws>  (or: hypermemory --workspace <ws> index)"
   GAPS=1
 fi
 
@@ -79,6 +79,6 @@ fi
 
 say ""
 say "Next actions:"
-say "- Run retrieval before answering: ./scripts/memory-retrieve.sh auto \"<query>\""
+say "- Run retrieval before answering: ./scripts/memory-retrieve.sh auto \"<query>\"  (or: hypermemory --workspace <ws> retrieve auto \"<query>\")"
 say "- After meaningful work: ./scripts/checkpoint.sh"
 exit 1

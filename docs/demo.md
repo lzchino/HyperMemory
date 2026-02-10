@@ -49,5 +49,5 @@ Semantic (CUDA+pgvector):
 
 Orchestrated:
 ```bash
-./scripts/memory-retrieve.sh auto "vector api service" --no-hybrid
+./scripts/memory-retrieve.sh auto "vector api service"
 ```

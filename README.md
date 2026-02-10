@@ -120,11 +120,12 @@ cp -a examples/workspace/MEMORY.md.example MEMORY.md
 
 ```bash
 ./scripts/memory-index.sh
-./scripts/memory-retrieve.sh auto "vector api service" --no-hybrid
+./scripts/memory-retrieve.sh auto "vector api service"
 
-# semantic
-python3 ./scripts/hypermemory_cuda_vector_index.py --repo . --daily-days 7
-python3 ./scripts/hypermemory_cuda_vector_search.py "vector api service" --limit 5
+# semantic (local pgvector, curated+distilled only)
+# Requires: DATABASE_URL + MF_EMBED_URL
+hypermemory --workspace . vector index
+hypermemory --workspace . vector search --query "vector api service" --limit 5
 ```
 
 ### 7) Benchmark
