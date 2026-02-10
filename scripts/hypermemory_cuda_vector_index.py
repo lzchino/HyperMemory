@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
-"""Hypermemory CUDA vector index (local embeddings) using Postgres + pgvector.
+"""LEGACY (deprecated): Hypermemory CUDA vector index (local embeddings) using Postgres + pgvector.
 
-This is the public-friendly version of the indexer.
-- Embeddings: mf-embeddings (FastAPI) on localhost
-- Storage: Postgres + pgvector
+This script predates the python-first local pgvector implementation.
 
-See docs:
-- docs/mf-embeddings.md
-- docs/pgvector.md
+Prefer:
+  hypermemory --workspace <ws> vector index
+  hypermemory --workspace <ws> vector search --query "..." --limit N
 
-Usage:
-  export DATABASE_URL='postgresql://...'
-  python3 scripts/hypermemory_cuda_vector_index.py --repo /path/to/workspace --daily-days 14
+This legacy script may be removed in a future release.
 """
 
 from __future__ import annotations

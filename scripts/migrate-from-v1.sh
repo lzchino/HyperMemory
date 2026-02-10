@@ -36,7 +36,10 @@ fi
 
 # Rebuild FTS index in destination
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-python3 "$ROOT/scripts/supermemory_index.py" --repo "$DST" >/dev/null || true
+"$ROOT/scripts/memory-index.sh" "$DST" >/dev/null 2>&1 || true
+
+# Optional: build deterministic entity index
+python3 -c "from hypermemory.entity_index import build_entity_index; from pathlib import Path; build_entity_index(Path('$DST'))" >/dev/null 2>&1 || true
 
 echo "Migrated files into: $DST"
-echo "Next: (optional) set DATABASE_URL and run pgvector indexer."
+echo "Next: (optional) set DATABASE_URL + MF_EMBED_URL and run: hypermemory --workspace $DST vector index"

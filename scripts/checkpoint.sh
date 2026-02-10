@@ -23,9 +23,12 @@ if [[ -x "$ROOT/scripts/maintenance/memory-distill.sh" ]]; then
 fi
 
 # 2) Rebuild SQLite FTS index
-if [[ -f "$ROOT/scripts/supermemory_index.py" ]]; then
-  python3 "$ROOT/scripts/supermemory_index.py" --repo "$WORKSPACE" >/dev/null || true
+if [[ -x "$ROOT/scripts/memory-index.sh" ]]; then
+  "$ROOT/scripts/memory-index.sh" "$WORKSPACE" >/dev/null || true
 fi
+
+# 2b) Rebuild deterministic entity index (optional but recommended)
+python3 -c "from hypermemory.entity_index import build_entity_index; from pathlib import Path; build_entity_index(Path('$WORKSPACE'))" >/dev/null 2>&1 || true
 
 # 3) Optional eval
 if [[ -x "$ROOT/scripts/memory-eval.sh" && -f "$WORKSPACE/memory/eval-queries.jsonl" ]]; then

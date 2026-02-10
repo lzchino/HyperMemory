@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Hypermemory CUDA vector search (local embeddings) using Postgres + pgvector.
+"""LEGACY (deprecated): Hypermemory CUDA vector search (local embeddings) using Postgres + pgvector.
 
-Usage:
-  export DATABASE_URL='postgresql://...'
-  python3 scripts/hypermemory_cuda_vector_search.py "vector-api.service" --limit 10
+Prefer:
+  hypermemory --workspace <ws> vector search --query "..." --limit N
+
+This legacy script may be removed in a future release.
 """
 
 from __future__ import annotations
