@@ -54,8 +54,24 @@ Checkpoint -> rollup tagged items -> rebuild indexes
 
 ## Quickstart (full distro)
 
-## Optional: Cloud L3 (BYO Postgres + pgvector)
-See: `docs/cloud/pgvector.md`
+## Docs
+
+- Architecture: `docs/architecture.md`
+- Getting started: `docs/getting-started.md`
+- Configuration: `docs/configuration.md`
+- Troubleshooting: `docs/troubleshooting.md`
+- Guardrails: `docs/guardrails.md`
+- Cloud L3: `docs/cloud/pgvector.md`
+- Subsystems:
+  - `docs/subsystems/core.md`
+  - `docs/subsystems/retrieval.md`
+  - `docs/subsystems/monitoring.md`
+  - `docs/subsystems/maintenance.md`
+  - `docs/subsystems/cloud.md`
+- Protocols:
+  - `docs/protocols/guardrails.md`
+  - `docs/protocols/cloud-sync.md`
+
 
 ### Prereqs
 - Ubuntu 24.04+ (or similar)
