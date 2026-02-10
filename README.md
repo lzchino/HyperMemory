@@ -27,9 +27,9 @@ HyperMemory solves that by combining:
 - local-first: avoids OpenAI embeddings latency
 
 4) **Memory Fortress-style guardrails**
-- pre-response evidence check
+- pre-response evidence check (`./scripts/monitoring/pre-response-check.sh`)
 - retrieval-before-answering when gaps are detected
-- periodic checkpoint + eval harness
+- periodic checkpoint (`./scripts/checkpoint.sh`) + eval harness
 
 ## Architecture (high level)
 
@@ -58,7 +58,9 @@ Checkpoint -> rollup tagged items -> rebuild indexes
 - Ubuntu 24.04+ (or similar)
 - Python 3.10+
 - Docker (recommended for Postgres+pgvector)
-- NVIDIA GPU + CUDA (optional but recommended)
+- NVIDIA GPU + CUDA (optional)
+- Apple Silicon (MPS) supported
+- CPU fallback supported (slower)
 
 ### 1) Clone
 

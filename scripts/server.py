@@ -7,7 +7,15 @@ from sentence_transformers import SentenceTransformer
 from typing import List, Union
 
 MODEL_ID = os.environ.get("EMBED_MODEL_ID", "intfloat/e5-small-v2")
-DEVICE = os.environ.get("EMBED_DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
+def _detect_device() -> str:
+    if torch.cuda.is_available():
+        return "cuda"
+    # Apple Silicon
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+DEVICE = os.environ.get("EMBED_DEVICE", _detect_device())
 HOST = os.environ.get("EMBED_HOST", "127.0.0.1")
 PORT = int(os.environ.get("EMBED_PORT", "8080"))
 

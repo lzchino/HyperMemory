@@ -4,8 +4,11 @@ The key difference between "I saved notes" and an actual memory system is enforc
 
 ## Pre-response evidence check
 Before answering any question that depends on prior context (decisions, todos, IDs/ports/paths):
-- check message buffer + session state + daily log presence
+- check message buffer + session state + derived index presence
 - if gaps detected → force retrieval
+
+Implemented:
+- scripts/monitoring/pre-response-check.sh
 
 ## Retrieval ordering (recommended)
 1) **SQLite FTS/entity** — fastest, best for exact facts.

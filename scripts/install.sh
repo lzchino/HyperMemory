@@ -4,7 +4,7 @@ set -euo pipefail
 # HyperMemory installer (lean, reproducible)
 # - creates .venv
 # - installs python deps
-# - prints next steps for Postgres+pgvector + CUDA
+# - prints next steps for Postgres+pgvector + optional accelerators (CUDA/MPS/CPU)
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 VENV="$ROOT/.venv"
@@ -32,8 +32,11 @@ Next steps:
 2) Set DATABASE_URL (example for docker-compose defaults):
    export DATABASE_URL='postgresql://hypermemory:hypermemory@127.0.0.1:5432/hypermemory'
 
-3) Start mf-embeddings (CUDA optional):
+3) Start mf-embeddings (CUDA/MPS optional; CPU fallback supported):
    ./scripts/run-embeddings.sh
+
+   # Force CPU if needed:
+   EMBED_DEVICE=cpu ./scripts/run-embeddings.sh
 
 4) Run demo / benchmark:
    ./docs/demo.md
