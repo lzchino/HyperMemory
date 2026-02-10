@@ -10,7 +10,7 @@
 - Ensure embeddings server is running:
   - `curl http://127.0.0.1:8080/health`
 - Rebuild vectors:
-  - `python3 scripts/hypermemory_cuda_vector_index.py --repo <workspace>`
+  - `hypermemory --workspace <workspace> vector index`
 
 ## Cloud push doesn’t write
 - Ensure `HYPERMEMORY_CLOUD_DATABASE_URL` is set.

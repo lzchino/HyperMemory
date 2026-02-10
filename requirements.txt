@@ -1,5 +1,5 @@
-psycopg[binary]>=3.2
-pgvector>=0.3.6
-fastapi>=0.110
-uvicorn[standard]>=0.27
-sentence-transformers>=2.6
+# Convenience meta-requirements file.
+# Prefer using scripts/install.sh which installs split requirements.
+-r requirements-core.txt
+-r requirements-web.txt
+-r requirements-embeddings.txt

@@ -11,8 +11,8 @@ WORKSPACE="${1:-${OPENCLAW_WORKSPACE:-$ROOT/tests/fixture-workspace}}"
 
 : "${DATABASE_URL:?DATABASE_URL is required}"
 
-# Index a small workspace
-python3 "$ROOT/scripts/hypermemory_cuda_vector_index.py" --repo "$WORKSPACE" --daily-days 30 --batch 16
+# Index curated+distilled semantic chunks into local pgvector
+python3 -c "from hypermemory.pgvector_local import LocalVectorConfig, index_workspace; import pathlib; cfg=LocalVectorConfig.from_env(); print('indexed', index_workspace(pathlib.Path('$WORKSPACE'), cfg, include_pending=False, batch=16))"
 
-# Query
-python3 "$ROOT/scripts/hypermemory_cuda_vector_search.py" "vector-api.service" --limit 3
+# Query (smoke)
+hypermemory --workspace "$WORKSPACE" vector search --query "vector-api.service" --limit 3

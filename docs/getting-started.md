@@ -67,13 +67,17 @@ export DATABASE_URL='postgresql://hypermemory:hypermemory@127.0.0.1:5432/hyperme
 
 ```bash
 ./scripts/run-embeddings.sh
+export MF_EMBED_URL='http://127.0.0.1:8080'
 ```
 
-3) Index vectors:
+3) Index + search (curated+distilled only):
 
 ```bash
-python3 scripts/hypermemory_cuda_vector_index.py --repo /path/to/workspace --daily-days 14
+hypermemory --workspace /path/to/workspace vector index
+hypermemory --workspace /path/to/workspace vector search --query "vector api service" --limit 5
 ```
+
+Note: legacy CUDA scripts still exist under `scripts/hypermemory_cuda_vector_*`, but the recommended path is the python-first `hypermemory vector` command.
 
 ## Optional: Cloud L3 (curated-only)
 
