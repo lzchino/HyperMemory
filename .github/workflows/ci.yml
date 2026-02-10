@@ -99,14 +99,19 @@ jobs:
           # Commit
           python3 ./scripts/cloud/push_curated.py --workspace ./tests/fixture-workspace --commit
 
-          # Assert row count
+          # Assert row count + secret not present in DB
           python - <<'PY'
 import os, psycopg
 url=os.environ['HYPERMEMORY_CLOUD_DATABASE_URL']
 with psycopg.connect(url) as con:
   c=con.execute("select count(*) from hm_cloud_item where namespace='ci'").fetchone()[0]
   assert c>=1, c
+  # ensure raw secret substring never made it into stored content
+  rows=con.execute("select content from hm_cloud_item where namespace='ci'").fetchall()
+  joined='\n'.join([r[0] for r in rows])
+  assert 'sk-THISISFAKE' not in joined, 'secret leaked to cloud'
 print('ok')
 PY
+
           # Smoke retrieval with cloud fallback
           OPENCLAW_WORKSPACE=./tests/fixture-workspace ./scripts/memory-retrieve.sh auto "vector-api.service" | head -n 50
