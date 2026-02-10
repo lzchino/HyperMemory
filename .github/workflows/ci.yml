@@ -35,9 +35,15 @@ jobs:
 
       - name: Journal smoke (WAL + projections)
         run: |
-          python3 -c "from hypermemory.journal import append_event; from pathlib import Path; append_event(Path('./tests/fixture-workspace'), 'ci journal', role='user', channel='ci')"
+          python3 -c "from hypermemory.journal import append_event; from pathlib import Path; append_event(Path('./tests/fixture-workspace'), 'ci journal 1', role='user', channel='ci')"
+          python3 -c "from hypermemory.journal import append_event; from pathlib import Path; append_event(Path('./tests/fixture-workspace'), 'ci journal 2', role='user', channel='ci')"
           test -f ./tests/fixture-workspace/memory/journal.jsonl
           test -f ./tests/fixture-workspace/memory/last-messages.jsonl
+          # rebuild projections from journal
+          python3 -c "from hypermemory.journal import rebuild_projections; from pathlib import Path; print(rebuild_projections(Path('./tests/fixture-workspace')))"
+          test -f ./tests/fixture-workspace/memory/last-messages.jsonl
+          test -f ./tests/fixture-workspace/memory/2026-02-10.rebuilt.md
+          grep -q "ci journal 2" ./tests/fixture-workspace/memory/2026-02-10.rebuilt.md
 
   vector-integration:
     runs-on: ubuntu-latest

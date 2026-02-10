@@ -62,6 +62,85 @@ def _append_line(path: Path, line: str) -> None:
         os.fsync(f.fileno())
 
 
+def read_events(workspace: Path) -> list[JournalEvent]:
+    ws = workspace.resolve()
+    journal = ws / "memory" / "journal.jsonl"
+    if not journal.exists():
+        return []
+
+    out: list[JournalEvent] = []
+    for line in journal.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+            out.append(
+                JournalEvent(
+                    ts_ms=int(obj.get("ts_ms", 0)),
+                    channel=str(obj.get("channel", "unknown")),
+                    session_key=str(obj.get("session_key", "")),
+                    role=str(obj.get("role", "user")),
+                    message=str(obj.get("message", "")),
+                )
+            )
+        except Exception:
+            continue
+    out.sort(key=lambda e: e.ts_ms)
+    return out
+
+
+def rebuild_projections(workspace: Path, tail_limit: int = 200) -> dict:
+    """Rebuild projections from journal.jsonl.
+
+    Overwrites:
+    - memory/last-messages.jsonl
+
+    Rebuilds daily files by appending to them would create duplicates, so we
+    write into memory/.rebuild/ and then replace the generated files only.
+    (We do not delete existing daily files by default.)
+
+    Returns stats.
+    """
+
+    ws = workspace.resolve()
+    mem = ws / "memory"
+    mem.mkdir(parents=True, exist_ok=True)
+
+    events = read_events(ws)
+
+    # last-messages.jsonl
+    last_path = mem / "last-messages.jsonl"
+    tail = events[-tail_limit:] if tail_limit > 0 else []
+    last_path.write_text("\n".join(json.dumps(e.__dict__, ensure_ascii=False) for e in tail) + ("\n" if tail else ""), encoding="utf-8")
+
+    # daily rebuild into temp directory
+    tmp = mem / ".rebuild"
+    if tmp.exists():
+        # best effort cleanup
+        for p in tmp.glob("*.md"):
+            try:
+                p.unlink()
+            except Exception:
+                pass
+    tmp.mkdir(parents=True, exist_ok=True)
+
+    daily_counts: dict[str, int] = {}
+    for e in events:
+        day = time.strftime("%Y-%m-%d", time.gmtime(e.ts_ms / 1000.0))
+        daily_counts[day] = daily_counts.get(day, 0) + 1
+        _append_line(tmp / f"{day}.md", f"- [{e.role}@{e.channel}] {e.message}")
+
+    # copy generated daily files into memory/ as *.rebuilt.md (non-destructive)
+    written = 0
+    for p in tmp.glob("*.md"):
+        target = mem / (p.stem + ".rebuilt.md")
+        target.write_text(p.read_text(encoding="utf-8", errors="replace"), encoding="utf-8")
+        written += 1
+
+    return {"events": len(events), "tail": len(tail), "rebuilt_daily_files": written, "daily_counts": daily_counts}
+
+
 def append_event(
     workspace: Path,
     message: str,

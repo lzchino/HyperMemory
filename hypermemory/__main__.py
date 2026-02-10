@@ -90,7 +90,7 @@ def cmd_cloud(args: argparse.Namespace) -> int:
 
 
 def cmd_journal(args: argparse.Namespace) -> int:
-    from .journal import append_event
+    from .journal import append_event, rebuild_projections
 
     cfg = Config.from_env(args.workspace)
 
@@ -99,6 +99,11 @@ def cmd_journal(args: argparse.Namespace) -> int:
             raise SystemExit("--message is required")
         ev = append_event(cfg.workspace, args.message, role=args.role, channel=args.channel, session_key=args.session_key)
         print(json.dumps(ev.__dict__, ensure_ascii=False))
+        return 0
+
+    if args.action == "rebuild":
+        stats = rebuild_projections(cfg.workspace, tail_limit=int(args.tail_limit))
+        print(json.dumps(stats, ensure_ascii=False, indent=2))
         return 0
 
     raise SystemExit("unknown journal action")
@@ -154,11 +159,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_cloud)
 
     s = sub.add_parser("journal", help="Durable WAL journal + projections")
-    s.add_argument("action", choices=["append"])
+    s.add_argument("action", choices=["append", "rebuild"])
     s.add_argument("--channel", default="unknown")
     s.add_argument("--session-key", default="")
     s.add_argument("--role", default="user")
     s.add_argument("--message", default="")
+    s.add_argument("--tail-limit", default="200")
     s.set_defaults(func=cmd_journal)
 
     s = sub.add_parser("vector", help="Local pgvector semantic index/search (curated+distilled only)")
