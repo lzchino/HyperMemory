@@ -96,6 +96,28 @@ def cmd_cloud(args: argparse.Namespace) -> int:
     raise SystemExit("unknown cloud action")
 
 
+def cmd_vector(args: argparse.Namespace) -> int:
+    from .pgvector_local import LocalVectorConfig, index_workspace, search_workspace
+
+    cfg = Config.from_env(args.workspace)
+    vcfg = LocalVectorConfig.from_env()
+
+    if args.action == "index":
+        n = index_workspace(cfg.workspace, vcfg, include_pending=args.include_pending, batch=args.batch)
+        print(f"indexed={n}")
+        return 0
+
+    if args.action == "search":
+        q = args.query
+        if not q:
+            raise SystemExit("--query is required")
+        for line in search_workspace(vcfg, q, limit=args.limit):
+            print(line)
+        return 0
+
+    raise SystemExit("unknown vector action")
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="hypermemory")
     p.add_argument("--workspace", help="Workspace root (default: OPENCLAW_WORKSPACE or cwd)")
@@ -122,6 +144,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--limit", type=int, default=200)
     s.add_argument("--query", default="")
     s.set_defaults(func=cmd_cloud)
+
+    s = sub.add_parser("vector", help="Local pgvector semantic index/search (curated+distilled only)")
+    s.add_argument("action", choices=["index", "search"])
+    s.add_argument("--include-pending", action="store_true")
+    s.add_argument("--batch", type=int, default=64)
+    s.add_argument("--limit", type=int, default=8)
+    s.add_argument("--query", default="")
+    s.set_defaults(func=cmd_vector)
 
     return p
 
