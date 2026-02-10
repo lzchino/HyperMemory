@@ -54,6 +54,9 @@ Checkpoint -> rollup tagged items -> rebuild indexes
 
 ## Quickstart (full distro)
 
+## Optional: Cloud L3 (BYO Postgres + pgvector)
+See: `docs/cloud/pgvector.md`
+
 ### Prereqs
 - Ubuntu 24.04+ (or similar)
 - Python 3.10+

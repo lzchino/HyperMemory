@@ -75,3 +75,25 @@ jobs:
         run: |
           chmod +x ./scripts/pgvector-smoke.sh
           ./scripts/pgvector-smoke.sh ./tests/fixture-workspace
+
+      - name: Cloud L3 (BYO pgvector) smoke
+        env:
+          HYPERMEMORY_CLOUD_DATABASE_URL: postgresql://hypermemory:hypermemory@127.0.0.1:5432/hypermemory
+          HYPERMEMORY_CLOUD_NAMESPACE: ci
+          HYPERMEMORY_CLOUD_EMBED_URL: http://127.0.0.1:8080
+        run: |
+          chmod +x ./scripts/cloud/pgvector_init.sh ./scripts/cloud/push_curated.sh
+          ./scripts/cloud/pgvector_init.sh
+          # Create a staged curated item
+          mkdir -p ./tests/fixture-workspace/memory/staging
+          echo '- [M3] CI test: vector-api.service runs on :8787' >> ./tests/fixture-workspace/memory/staging/MEMORY.pending.md
+          ./scripts/cloud/push_curated.sh ./tests/fixture-workspace
+          # Assert row count
+          python - <<'PY'
+import os, psycopg
+url=os.environ['HYPERMEMORY_CLOUD_DATABASE_URL']
+with psycopg.connect(url) as con:
+  c=con.execute("select count(*) from hm_cloud_item where namespace='ci'").fetchone()[0]
+  assert c>=1, c
+print('ok')
+PY
