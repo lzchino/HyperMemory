@@ -82,12 +82,23 @@ def rrf_score(ranks: dict[str, int], k: float = 60.0) -> float:
     return sum(1.0 / (k + float(r)) for r in ranks.values())
 
 
+def entity_layer(workspace: Path, query: str, limit: int = 8) -> list[tuple[str, str]]:
+    from .entity_index import search_entities
+
+    hits = search_entities(workspace, query, limit=limit)
+    out: list[tuple[str, str]] = []
+    for i, h in enumerate(hits, 1):
+        out.append((f"entity:{i}", f"{h.entity} {h.attr}={h.value}"))
+    return out
+
+
 def retrieve(workspace: Path, query: str, mode: str = "auto", limit: int = 10) -> list[RetrievalHit]:
     ws = workspace.resolve()
     if mode == "auto":
         mode = detect_mode(query)
 
     # Local-first layers
+    ent = entity_layer(ws, query, limit=8) if mode == "targeted" else []
     fts = fts_layer(ws, query, limit=20)
     bm25 = bm25_layer(ws, query, limit=10)
     vec = vec_layer(query, limit=8)
@@ -104,6 +115,8 @@ def retrieve(workspace: Path, query: str, mode: str = "auto", limit: int = 10) -
         if snippet and (not it["snippet"] or len(snippet) > len(it["snippet"])):
             it["snippet"] = snippet
 
+    for r, (key, snip) in enumerate(ent, 1):
+        add("entity", r, key, snip)
     for r, (key, snip) in enumerate(fts, 1):
         add("fts", r, key, snip)
     for r, (key, snip) in enumerate(bm25, 1):

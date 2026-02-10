@@ -109,6 +109,27 @@ def cmd_journal(args: argparse.Namespace) -> int:
     raise SystemExit("unknown journal action")
 
 
+def cmd_entity(args: argparse.Namespace) -> int:
+    from .entity_index import build_entity_index, search_entities
+
+    cfg = Config.from_env(args.workspace)
+
+    if args.action == "index":
+        stats = build_entity_index(cfg.workspace, include_pending=bool(args.include_pending))
+        print(json.dumps(stats, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.action == "search":
+        if not args.query:
+            raise SystemExit("--query is required")
+        hits = search_entities(cfg.workspace, args.query, limit=int(args.limit))
+        for h in hits:
+            print(f"[{h.score:.2f}] {h.entity} {h.attr}={h.value} ({h.source})")
+        return 0
+
+    raise SystemExit("unknown entity action")
+
+
 def cmd_vector(args: argparse.Namespace) -> int:
     from .pgvector_local import LocalVectorConfig, index_workspace, search_workspace
 
@@ -166,6 +187,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--message", default="")
     s.add_argument("--tail-limit", default="200")
     s.set_defaults(func=cmd_journal)
+
+    s = sub.add_parser("entity", help="Deterministic entity/fact index (SQLite)")
+    s.add_argument("action", choices=["index", "search"])
+    s.add_argument("--include-pending", action="store_true")
+    s.add_argument("--limit", type=int, default=10)
+    s.add_argument("--query", default="")
+    s.set_defaults(func=cmd_entity)
 
     s = sub.add_parser("vector", help="Local pgvector semantic index/search (curated+distilled only)")
     s.add_argument("action", choices=["index", "search"])

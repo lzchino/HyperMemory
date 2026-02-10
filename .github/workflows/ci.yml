@@ -33,6 +33,11 @@ jobs:
           ./scripts/memory-index.sh || true
           MIN_RECALL=100 ./scripts/memory-eval.sh ./tests/fixture-workspace --fast
 
+      - name: Entity index smoke
+        run: |
+          python3 -c "from hypermemory.entity_index import build_entity_index; from pathlib import Path; print(build_entity_index(Path('./tests/fixture-workspace')))"
+          python3 -c "from hypermemory.__main__ import main; import sys; sys.exit(main(['--workspace','./tests/fixture-workspace','entity','search','--query','vector-api.service','--limit','5']))" | head -n 5
+
       - name: Journal smoke (WAL + projections)
         run: |
           python3 -c "from hypermemory.journal import append_event; from pathlib import Path; append_event(Path('./tests/fixture-workspace'), 'ci journal 1', role='user', channel='ci')"
