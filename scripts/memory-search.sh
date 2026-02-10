@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DB="$ROOT/memory/supermemory.sqlite"
+WORKSPACE="${OPENCLAW_WORKSPACE:-$ROOT}"
+DB="$WORKSPACE/memory/supermemory.sqlite"
 QUERY="${1:-}"
 
 if [[ -z "$QUERY" ]]; then

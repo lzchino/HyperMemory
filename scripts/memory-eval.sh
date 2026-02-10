@@ -162,3 +162,9 @@ echo ""
 echo "== summary =="
 echo "total=$TOTAL pass=$PASS fail=$FAIL recall=${RECALL}%"
 echo "pass_retrieve=$PASS_RETRIEVE pass_file=$PASS_FILE"
+
+MIN_RECALL="${MIN_RECALL:-0}"
+if [[ "$MIN_RECALL" -gt 0 && "$RECALL" -lt "$MIN_RECALL" ]]; then
+  echo "FAIL: recall ${RECALL}% < MIN_RECALL=${MIN_RECALL}%" >&2
+  exit 1
+fi

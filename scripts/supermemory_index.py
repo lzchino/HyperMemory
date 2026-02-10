@@ -107,14 +107,39 @@ def index_daily(repo: Path, con: sqlite3.Connection) -> None:
             ix += 1
 
 
+def compute_fingerprint(repo: Path) -> str:
+    parts: list[str] = []
+    mem = repo / "MEMORY.md"
+    if mem.exists():
+        st = mem.stat()
+        parts.append(f"MEMORY.md:{st.st_mtime_ns}:{st.st_size}")
+
+    mdir = repo / "memory"
+    if mdir.exists():
+        for p in sorted(mdir.glob("????-??-??.md")):
+            st = p.stat()
+            parts.append(f"{p.name}:{st.st_mtime_ns}:{st.st_size}")
+
+    return "|".join(parts)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", default=".")
+    ap.add_argument("--force", action="store_true", help="Rebuild even if inputs unchanged")
     args = ap.parse_args()
 
     repo = Path(args.repo).resolve()
     db = repo / "memory" / "supermemory.sqlite"
     db.parent.mkdir(parents=True, exist_ok=True)
+
+    fp_path = repo / "memory" / "index-fingerprint.txt"
+    fp = compute_fingerprint(repo)
+    if not args.force and fp_path.exists():
+        old = fp_path.read_text(encoding="utf-8", errors="replace")
+        if old == fp and db.exists():
+            print(str(db))
+            return 0
 
     con = sqlite3.connect(str(db))
     try:
@@ -125,6 +150,7 @@ def main() -> int:
     finally:
         con.close()
 
+    fp_path.write_text(fp, encoding="utf-8")
     print(str(db))
     return 0
 

@@ -27,4 +27,4 @@ jobs:
         run: |
           ./scripts/install.sh --embeddings-only
           ./scripts/memory-index.sh || true
-          ./scripts/memory-eval.sh ./tests/fixture-workspace --fast
+          MIN_RECALL=100 ./scripts/memory-eval.sh ./tests/fixture-workspace --fast
