@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -30,12 +31,17 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 
 def cmd_eval(args: argparse.Namespace) -> int:
+    from .eval import run_eval
+
     cfg = Config.from_env(args.workspace)
-    script = Path(__file__).resolve().parent.parent / "scripts" / "memory-eval.sh"
-    cmd = ["bash", str(script), str(cfg.workspace)]
-    if args.fast:
-        cmd.append("--fast")
-    return _run(cmd)
+    min_recall = int(os.environ.get("MIN_RECALL", "0"))
+    res = run_eval(cfg, fast=args.fast, min_recall=min_recall)
+
+    print("\n== summary ==")
+    print(f"total={res.total} pass={res.passed} fail={res.failed} recall={res.recall_pct}%")
+    print(f"pass_retrieve={res.pass_retrieve} pass_file={res.pass_file}")
+
+    return 0
 
 
 def cmd_index(args: argparse.Namespace) -> int:
