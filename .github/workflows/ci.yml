@@ -85,12 +85,20 @@ jobs:
         run: |
           chmod +x ./scripts/cloud/pgvector_init.sh ./scripts/cloud/push_curated.sh
           ./scripts/cloud/pgvector_init.sh
-          # Create a staged curated item
+          # Create staged curated items (1 safe, 1 with a fake secret)
           mkdir -p ./tests/fixture-workspace/memory/staging
-          echo '- [M3] CI test: vector-api.service runs on :8787' >> ./tests/fixture-workspace/memory/staging/MEMORY.pending.md
-          # Prepare payload then commit
+          echo '- [M3] CI safe: vector-api.service runs on :8787' >> ./tests/fixture-workspace/memory/staging/MEMORY.pending.md
+          echo '- [M3] CI secret: sk-THISISFAKEBUTSHOULDBEREDACTED1234567890' >> ./tests/fixture-workspace/memory/staging/MEMORY.pending.md
+
+          # Prepare payload (no commit yet)
           python3 ./scripts/cloud/push_curated.py --workspace ./tests/fixture-workspace
+
+          # Assert payload does not contain raw key pattern
+          ! grep -R "sk-THISISFAKE" -n ./tests/fixture-workspace/memory/staging/cloud-push.payload.json
+
+          # Commit
           python3 ./scripts/cloud/push_curated.py --workspace ./tests/fixture-workspace --commit
+
           # Assert row count
           python - <<'PY'
 import os, psycopg

@@ -35,6 +35,33 @@ _RULES: list[tuple[str, re.Pattern[str]]] = [
 ]
 
 
+def validate_allowlist(text: str) -> tuple[bool, list[str]]:
+    """Return (ok, reasons).
+
+    Allowlist is intentionally restrictive: curated facts should be short, human-readable,
+    and not contain raw credentials.
+    """
+
+    reasons: list[str] = []
+
+    if len(text) > 500:
+        reasons.append("too_long")
+
+    # Block obvious binary/high-entropy tokens
+    if re.search(r"[A-Za-z0-9+/=]{40,}", text):
+        reasons.append("high_entropy_token")
+
+    # Block file-like secrets and key blocks
+    if "PRIVATE KEY" in text:
+        reasons.append("private_key_block")
+
+    # Block env-style secret assignments
+    if re.search(r"(?i)\b(secret|password|token|api[_-]?key)\b\s*=", text):
+        reasons.append("secret_assignment")
+
+    return (len(reasons) == 0, reasons)
+
+
 def redact(text: str, extra_rules: Iterable[tuple[str, re.Pattern[str]]] = ()) -> RedactionResult:
     out = text
     matched: list[str] = []

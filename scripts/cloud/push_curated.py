@@ -51,7 +51,7 @@ def embed_texts(embed_base_url: str, texts: List[str]) -> List[List[float]]:
     return http_json(f"{embed_base_url.rstrip('/')}/embed", {"inputs": texts})
 
 
-from scripts.cloud.redaction import redact as _redact
+from scripts.cloud.redaction import redact as _redact, validate_allowlist
 
 
 def parse_pending(path: Path, threshold: int) -> list[tuple[int, str]]:
@@ -101,13 +101,37 @@ def main() -> int:
         print("No curated items to push.")
         return 0
 
+    allowlist = os.environ.get("HYPERMEMORY_CLOUD_ALLOWLIST", "1") == "1"
+
     # redact + audit (never log raw secrets)
     redacted = []
     audit = []
+    skipped = 0
     for score, text in items:
         rr = _redact(text)
+
+        ok = True
+        reasons: list[str] = []
+        if allowlist:
+            ok, reasons = validate_allowlist(rr.text)
+
+        if not ok:
+            skipped += 1
+            audit.append({
+                "score": score,
+                "skipped": True,
+                "skip_reasons": reasons,
+                "redactions": rr.redaction_count,
+                "rules": rr.matched_rules,
+            })
+            continue
+
         redacted.append((score, rr.text))
-        audit.append({"score": score, "redactions": rr.redaction_count, "rules": rr.matched_rules})
+        audit.append({"score": score, "skipped": False, "redactions": rr.redaction_count, "rules": rr.matched_rules})
+
+    if not redacted:
+        print(f"No items eligible to push after allowlist/redaction (skipped={skipped}).")
+        return 0
 
     texts = ["passage: " + t for _s, t in redacted]
 
@@ -124,22 +148,27 @@ def main() -> int:
     redaction_log = audit_dir / "cloud-redaction.jsonl"
 
     # Build a payload that can be reviewed before commit
+    # Build payload from the non-skipped audit rows only
+    payload_items = []
+    audit_non_skipped = [a for a in audit if not a.get("skipped")]
+    for (score, text), a in zip(redacted, audit_non_skipped):
+        payload_items.append({
+            "score": score,
+            "content": text,
+            "content_sha": sha256(text),
+            "redactions": a.get("redactions", 0),
+            "rules": a.get("rules", []),
+        })
+
     payload = {
         "namespace": namespace,
         "threshold": threshold,
+        "allowlist": allowlist,
         "model_id": model_id,
         "dims": dims,
-        "count": len(redacted),
-        "items": [
-            {
-                "score": score,
-                "content": text,
-                "content_sha": sha256(text),
-                "redactions": a["redactions"],
-                "rules": a["rules"],
-            }
-            for (score, text), a in zip(redacted, audit)
-        ],
+        "count": len(payload_items),
+        "skipped": skipped,
+        "items": payload_items,
     }
 
     payload_path = ws / "memory" / "staging" / "cloud-push.payload.json"
