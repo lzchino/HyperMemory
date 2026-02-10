@@ -28,3 +28,67 @@ jobs:
           ./scripts/install.sh --embeddings-only
           ./scripts/memory-index.sh || true
           MIN_RECALL=100 ./scripts/memory-eval.sh ./tests/fixture-workspace --fast
+
+  vector-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: ankane/pgvector:pg16
+        env:
+          POSTGRES_USER: hypermemory
+          POSTGRES_PASSWORD: hypermemory
+          POSTGRES_DB: hypermemory
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hypermemory -d hypermemory"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          ./scripts/install.sh --embeddings-only
+
+      - name: Start fake embeddings server
+        run: |
+          python -m uvicorn scripts.retrieval.fake_embed_server:app --host 127.0.0.1 --port 8080 &
+          sleep 1
+          curl -s http://127.0.0.1:8080/health
+
+      - name: pgvector smoke
+        env:
+          DATABASE_URL: postgresql://hypermemory:hypermemory@127.0.0.1:5432/hypermemory
+          MF_EMBED_URL: http://127.0.0.1:8080
+        run: |
+          chmod +x ./scripts/pgvector-smoke.sh
+          ./scripts/pgvector-smoke.sh ./tests/fixture-workspace
+
+      - uses: actions/checkout@v4
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: ./scripts
+        continue-on-error: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compile python
+        run: python -m compileall scripts
+
+      - name: Smoke test (SQLite index + eval)
+        run: |
+          ./scripts/install.sh --embeddings-only
+          ./scripts/memory-index.sh || true
+          MIN_RECALL=100 ./scripts/memory-eval.sh ./tests/fixture-workspace --fast
