@@ -11,6 +11,10 @@ memory/**/*.md
 memory/**/*.json
 memory/**/*.jsonl
 
+# Allow committing fixture workspaces for CI
+!tests/fixture-workspace/
+!tests/fixture-workspace/**
+
 # Local caches
 __pycache__/
 *.pyc

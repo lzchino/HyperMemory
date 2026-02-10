@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: ankane/pgvector:pg16
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: hypermemory
           POSTGRES_PASSWORD: hypermemory

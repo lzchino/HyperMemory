@@ -1,0 +1,5 @@
+# expected-mode queries
+{"query":"what port is vector-api.service on?","expected":":8787","category":"entity-lookup"}
+{"query":"what error code did we see?","expected":"EADDRINUSE","category":"entity-lookup"}
+{"query":"what node was deployed?","expected":"node-fishbowl","category":"entity-lookup"}
+{"query":"which integration is pending?","expected":"RingCentral","category":"decision-recall"}
