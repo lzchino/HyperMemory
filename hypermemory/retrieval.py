@@ -42,6 +42,26 @@ def fts_layer(workspace: Path, query: str, limit: int = 20) -> list[tuple[str, s
     return out
 
 
+def vec_layer(query: str, limit: int = 8) -> list[tuple[str, str]]:
+    """Local pgvector semantic layer.
+
+    Only indexes curated+distilled chunks (hm_local_embedding).
+    Enabled when DATABASE_URL is set.
+    """
+
+    if not os.environ.get("DATABASE_URL"):
+        return []
+
+    from .pgvector_local import LocalVectorConfig, search_workspace
+
+    cfg = LocalVectorConfig.from_env()
+    lines = search_workspace(cfg, query, limit=limit)
+    out: list[tuple[str, str]] = []
+    for i, line in enumerate(lines, 1):
+        out.append((f"vec:{i}", line))
+    return out
+
+
 def cloud_layer(query: str, limit: int = 8) -> list[tuple[str, str]]:
     if os.environ.get("HYPERMEMORY_CLOUD_FALLBACK", "0") != "1":
         return []
@@ -70,6 +90,7 @@ def retrieve(workspace: Path, query: str, mode: str = "auto", limit: int = 10) -
     # Local-first layers
     fts = fts_layer(ws, query, limit=20)
     bm25 = bm25_layer(ws, query, limit=10)
+    vec = vec_layer(query, limit=8)
     cloud = cloud_layer(query, limit=8)
 
     items: dict[str, dict] = {}
@@ -87,6 +108,8 @@ def retrieve(workspace: Path, query: str, mode: str = "auto", limit: int = 10) -
         add("fts", r, key, snip)
     for r, (key, snip) in enumerate(bm25, 1):
         add("bm25", r, key, snip)
+    for r, (key, snip) in enumerate(vec, 1):
+        add("vec", r, key, snip)
     for r, (key, snip) in enumerate(cloud, 1):
         add("cloud", r, key, snip)
 

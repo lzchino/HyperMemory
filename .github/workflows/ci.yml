@@ -76,6 +76,16 @@ jobs:
           chmod +x ./scripts/pgvector-smoke.sh
           ./scripts/pgvector-smoke.sh ./tests/fixture-workspace
 
+      - name: local vector integration (curated+distilled only)
+        env:
+          DATABASE_URL: postgresql://hypermemory:hypermemory@127.0.0.1:5432/hypermemory
+          MF_EMBED_URL: http://127.0.0.1:8080
+        run: |
+          # index curated+distilled chunks into local pgvector
+          python3 -c "from hypermemory.pgvector_local import LocalVectorConfig, index_workspace; import pathlib; cfg=LocalVectorConfig.from_env(); print('indexed', index_workspace(pathlib.Path('./tests/fixture-workspace'), cfg, include_pending=False, batch=16))"
+          # ensure retrieval can see vec layer (prints vec:...)
+          python3 -c "from hypermemory.__main__ import main; import sys; sys.exit(main(['--workspace','./tests/fixture-workspace','retrieve','auto','service port vector api']))" | grep -E '^\[[0-9.]+\] ' | head -n 5
+
       - name: Cloud L3 (BYO pgvector) smoke
         env:
           HYPERMEMORY_CLOUD_DATABASE_URL: postgresql://hypermemory:hypermemory@127.0.0.1:5432/hypermemory

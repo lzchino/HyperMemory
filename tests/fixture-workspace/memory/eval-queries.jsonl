@@ -3,3 +3,4 @@
 {"query":"what error code did we see?","expected":"EADDRINUSE","category":"entity-lookup"}
 {"query":"what node was deployed?","expected":"node-fishbowl","category":"entity-lookup"}
 {"query":"which integration is pending?","expected":"RingCentral","category":"decision-recall"}
+{"query":"service port vector api","expected":":8787","category":"semantic-recall"}
