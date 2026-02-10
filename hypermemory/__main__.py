@@ -39,9 +39,12 @@ def cmd_eval(args: argparse.Namespace) -> int:
 
 
 def cmd_index(args: argparse.Namespace) -> int:
+    from .fts import build_index
+
     cfg = Config.from_env(args.workspace)
-    script = Path(__file__).resolve().parent.parent / "scripts" / "memory-index.sh"
-    return _run(["bash", str(script), str(cfg.workspace)])
+    res = build_index(cfg.workspace)
+    print(str(res.db_path))
+    return 0
 
 
 def cmd_retrieve(args: argparse.Namespace) -> int:
@@ -74,7 +77,23 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    # UX improvement: allow --workspace to appear anywhere (before or after subcommand)
+    av = list(argv) if argv is not None else None
+    if av is None:
+        import sys
+
+        av = sys.argv[1:]
+
+    if "--workspace" in av:
+        i = av.index("--workspace")
+        if i > 0 and i + 1 < len(av):
+            ws = av[i + 1]
+            # remove pair
+            del av[i : i + 2]
+            # prepend
+            av = ["--workspace", ws] + av
+
+    args = build_parser().parse_args(av)
     return int(args.func(args))
 
 
