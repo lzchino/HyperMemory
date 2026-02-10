@@ -89,6 +89,21 @@ def cmd_cloud(args: argparse.Namespace) -> int:
     raise SystemExit("unknown cloud action")
 
 
+def cmd_journal(args: argparse.Namespace) -> int:
+    from .journal import append_event
+
+    cfg = Config.from_env(args.workspace)
+
+    if args.action == "append":
+        if not args.message:
+            raise SystemExit("--message is required")
+        ev = append_event(cfg.workspace, args.message, role=args.role, channel=args.channel, session_key=args.session_key)
+        print(json.dumps(ev.__dict__, ensure_ascii=False))
+        return 0
+
+    raise SystemExit("unknown journal action")
+
+
 def cmd_vector(args: argparse.Namespace) -> int:
     from .pgvector_local import LocalVectorConfig, index_workspace, search_workspace
 
@@ -137,6 +152,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--limit", type=int, default=200)
     s.add_argument("--query", default="")
     s.set_defaults(func=cmd_cloud)
+
+    s = sub.add_parser("journal", help="Durable WAL journal + projections")
+    s.add_argument("action", choices=["append"])
+    s.add_argument("--channel", default="unknown")
+    s.add_argument("--session-key", default="")
+    s.add_argument("--role", default="user")
+    s.add_argument("--message", default="")
+    s.set_defaults(func=cmd_journal)
 
     s = sub.add_parser("vector", help="Local pgvector semantic index/search (curated+distilled only)")
     s.add_argument("action", choices=["index", "search"])

@@ -41,6 +41,7 @@ def run_doctor(workspace: Path) -> DoctorReport:
     # Session / buffer
     checks["session_state"] = _exists(mem_dir / "session-state.json")
     checks["message_buffer"] = _exists(mem_dir / "last-messages.jsonl")
+    checks["journal"] = _exists(mem_dir / "journal.jsonl")
 
     # Local pgvector
     db_url = os.environ.get("DATABASE_URL")
