@@ -15,19 +15,12 @@ def _run(cmd: list[str]) -> int:
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
+    from .doctor import run_doctor, to_json
+
     cfg = Config.from_env(args.workspace)
-    m = cfg.workspace / "memory"
-    out = {
-        "workspace": str(cfg.workspace),
-        "memory_dir": m.exists(),
-        "memory_md": (cfg.workspace / "MEMORY.md").exists(),
-        "sqlite_fts": (m / "supermemory.sqlite").exists(),
-        "session_state": (m / "session-state.json").exists(),
-        "message_buffer": (m / "last-messages.jsonl").exists(),
-    }
-    print(json.dumps(out, indent=2))
-    critical_missing = not out["memory_dir"]
-    return 1 if critical_missing else 0
+    rep = run_doctor(cfg.workspace)
+    print(to_json(rep))
+    return 0 if rep.ok else 1
 
 
 def cmd_eval(args: argparse.Namespace) -> int:
