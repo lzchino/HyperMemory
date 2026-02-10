@@ -3,15 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
-from pathlib import Path
 
 from .config import Config
-
-
-def _run(cmd: list[str]) -> int:
-    p = subprocess.run(cmd)
-    return int(p.returncode)
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -50,8 +43,7 @@ def cmd_search(args: argparse.Namespace) -> int:
     from .search import search_fts
 
     cfg = Config.from_env(args.workspace)
-    q = args.query
-    hits = search_fts(cfg.workspace, q, limit=int(args.limit))
+    hits = search_fts(cfg.workspace, args.query, limit=int(args.limit))
     for h in hits:
         print(f"{h.source} | {h.source_key} | {h.chunk_ix} | {h.snippet}")
     return 0
@@ -153,10 +145,9 @@ def cmd_vector(args: argparse.Namespace) -> int:
         return 0
 
     if args.action == "search":
-        q = args.query
-        if not q:
+        if not args.query:
             raise SystemExit("--query is required")
-        for line in search_workspace(vcfg, q, limit=args.limit):
+        for line in search_workspace(vcfg, args.query, limit=args.limit):
             print(line)
         return 0
 
@@ -234,9 +225,7 @@ def main(argv: list[str] | None = None) -> int:
         i = av.index("--workspace")
         if i > 0 and i + 1 < len(av):
             ws = av[i + 1]
-            # remove pair
             del av[i : i + 2]
-            # prepend
             av = ["--workspace", ws] + av
 
     args = build_parser().parse_args(av)

@@ -25,7 +25,7 @@ jobs:
           python-version: '3.11'
 
       - name: Compile python
-        run: python -m compileall scripts
+        run: python -m compileall hypermemory scripts
 
       - name: Smoke test (SQLite index + eval)
         run: |
