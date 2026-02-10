@@ -12,8 +12,13 @@ license = {text = "MIT"}
 authors = [{name = "lz_chino"}]
 
 dependencies = [
+  # keep core lightweight; heavy ML deps live in optional extras
   "psycopg[binary]>=3.2",
   "pgvector>=0.3.6",
+]
+
+[project.optional-dependencies]
+embeddings = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
   "sentence-transformers>=2.6",
