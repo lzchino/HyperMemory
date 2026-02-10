@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Back-compat wrapper. Prefer: hypermemory search (not yet implemented)
+# This retains the old behavior: direct SQLite FTS query.
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORKSPACE="${OPENCLAW_WORKSPACE:-$ROOT}"
 DB="$WORKSPACE/memory/supermemory.sqlite"
