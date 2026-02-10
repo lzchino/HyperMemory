@@ -51,20 +51,7 @@ def embed_texts(embed_base_url: str, texts: List[str]) -> List[List[float]]:
     return http_json(f"{embed_base_url.rstrip('/')}/embed", {"inputs": texts})
 
 
-REDACT_PATTERNS = [
-    # extremely conservative defaults
-    re.compile(r"(?i)apikey\s*[:=]\s*\S+"),
-    re.compile(r"(?i)secret\s*[:=]\s*\S+"),
-    re.compile(r"(?i)password\s*[:=]\s*\S+"),
-    re.compile(r"(?i)token\s*[:=]\s*\S+"),
-]
-
-
-def redact(text: str) -> str:
-    out = text
-    for rx in REDACT_PATTERNS:
-        out = rx.sub("[REDACTED]", out)
-    return out
+from scripts.cloud.redaction import redact as _redact
 
 
 def parse_pending(path: Path, threshold: int) -> list[tuple[int, str]]:
@@ -93,6 +80,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--workspace", default=os.environ.get("OPENCLAW_WORKSPACE", "."))
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--commit", action="store_true", help="Actually push to cloud (otherwise writes a payload file)")
     args = ap.parse_args()
 
     ws = Path(args.workspace).resolve()
@@ -113,8 +101,14 @@ def main() -> int:
         print("No curated items to push.")
         return 0
 
-    # redact
-    redacted = [(score, redact(text)) for score, text in items]
+    # redact + audit (never log raw secrets)
+    redacted = []
+    audit = []
+    for score, text in items:
+        rr = _redact(text)
+        redacted.append((score, rr.text))
+        audit.append({"score": score, "redactions": rr.redaction_count, "rules": rr.matched_rules})
+
     texts = ["passage: " + t for _s, t in redacted]
 
     # embed
@@ -127,9 +121,40 @@ def main() -> int:
     audit_dir = ws / "memory"
     audit_dir.mkdir(parents=True, exist_ok=True)
     audit_log = audit_dir / "cloud-sync.jsonl"
+    redaction_log = audit_dir / "cloud-redaction.jsonl"
 
-    if args.dry_run:
-        print(f"DRY RUN: would push {len(items)} items to namespace={namespace} dims={dims} model={model_id}")
+    # Build a payload that can be reviewed before commit
+    payload = {
+        "namespace": namespace,
+        "threshold": threshold,
+        "model_id": model_id,
+        "dims": dims,
+        "count": len(redacted),
+        "items": [
+            {
+                "score": score,
+                "content": text,
+                "content_sha": sha256(text),
+                "redactions": a["redactions"],
+                "rules": a["rules"],
+            }
+            for (score, text), a in zip(redacted, audit)
+        ],
+    }
+
+    payload_path = ws / "memory" / "staging" / "cloud-push.payload.json"
+    payload_path.parent.mkdir(parents=True, exist_ok=True)
+    payload_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    if args.dry_run or not args.commit:
+        print(
+            f"Prepared payload at {payload_path} (count={len(redacted)}). "
+            + ("DRY RUN." if args.dry_run else "Run again with --commit to push.")
+        )
+        # write a redaction audit summary
+        with redaction_log.open("a", encoding="utf-8") as f:
+            for a in audit:
+                f.write(json.dumps({"action": "redaction", "namespace": namespace, **a}) + "\n")
         return 0
 
     with psycopg.connect(db_url) as con:
@@ -137,12 +162,18 @@ def main() -> int:
         ensure_schema(con)
 
         pushed = 0
-        for (score, text), vec in zip(redacted, vecs):
-            content_sha = sha256(text)
+        # emit redaction audit first
+        with redaction_log.open("a", encoding="utf-8") as f:
+            for a in audit:
+                f.write(json.dumps({"action": "redaction", "namespace": namespace, **a}) + "\n")
+
+        for idx, ((score, text), vec) in enumerate(zip(redacted, vecs)):
+            content_sha = payload["items"][idx]["content_sha"]
             meta = {
                 "score": score,
                 "workspace": str(ws),
                 "source": "staging/MEMORY.pending.md",
+                "payload_path": str(payload_path),
             }
 
             con.execute(

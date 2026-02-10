@@ -68,6 +68,20 @@ if $HYBRID; then
   fi
 fi
 
+# --- optional cloud fallback (curated-only) ---
+# Enabled only when explicitly requested.
+CLOUD_OUT=""
+if [[ "${HYPERMEMORY_CLOUD_FALLBACK:-0}" = "1" ]]; then
+  if [[ -n "${HYPERMEMORY_CLOUD_DATABASE_URL:-}" ]]; then
+    CLOUD_OUT=$(HYPERMEMORY_CLOUD_DATABASE_URL="$HYPERMEMORY_CLOUD_DATABASE_URL" \
+      HYPERMEMORY_CLOUD_NAMESPACE="${HYPERMEMORY_CLOUD_NAMESPACE:-default}" \
+      HYPERMEMORY_CLOUD_EMBED_URL="${HYPERMEMORY_CLOUD_EMBED_URL:-http://127.0.0.1:8080}" \
+      HYPERMEMORY_CLOUD_MODEL_ID="${HYPERMEMORY_CLOUD_MODEL_ID:-local}" \
+      python3 "$ROOT/scripts/cloud/search_curated.py" "$QUERY" --limit 8 2>/dev/null || true)
+    export CLOUD_OUT
+  fi
+fi
+
 # --- RRF fuse + print ---
 python3 - "$MODE" "$QUERY" <<'PY'
 import os,sys
@@ -77,6 +91,7 @@ query=sys.argv[2]
 fts=os.environ.get('FTS_OUT','')
 vec=os.environ.get('VEC_OUT','')
 bm25=os.environ.get('BM25_OUT','')
+cloud=os.environ.get('CLOUD_OUT','')
 
 k=60.0
 items = {}
@@ -115,6 +130,14 @@ for i,line in enumerate([l for l in bm25.splitlines() if l.strip()]):
     key=f"bm25:{path}#{i}"
     add('bm25', i+1, key, snippet)
 
+# Cloud curated: [sim] sha=... M3 content
+for i,line in enumerate([l for l in cloud.splitlines() if l.strip()]):
+    if not line.startswith('['):
+        continue
+    rest=line.split(']',1)[1].strip() if ']' in line else line
+    key=f"cloud:{i}"
+    add('cloud', i+1, key, rest)
+
 scored=[]
 for key,it in items.items():
     score=0.0
@@ -138,4 +161,7 @@ print(vec or "(none)")
 print("")
 print("-- RAW BM25 --")
 print(bm25 or "(none)")
+print("")
+print("-- RAW CLOUD --")
+print(cloud or "(none)")
 PY

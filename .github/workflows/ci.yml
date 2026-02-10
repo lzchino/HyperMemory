@@ -81,13 +81,16 @@ jobs:
           HYPERMEMORY_CLOUD_DATABASE_URL: postgresql://hypermemory:hypermemory@127.0.0.1:5432/hypermemory
           HYPERMEMORY_CLOUD_NAMESPACE: ci
           HYPERMEMORY_CLOUD_EMBED_URL: http://127.0.0.1:8080
+          HYPERMEMORY_CLOUD_FALLBACK: '1'
         run: |
           chmod +x ./scripts/cloud/pgvector_init.sh ./scripts/cloud/push_curated.sh
           ./scripts/cloud/pgvector_init.sh
           # Create a staged curated item
           mkdir -p ./tests/fixture-workspace/memory/staging
           echo '- [M3] CI test: vector-api.service runs on :8787' >> ./tests/fixture-workspace/memory/staging/MEMORY.pending.md
-          ./scripts/cloud/push_curated.sh ./tests/fixture-workspace
+          # Prepare payload then commit
+          python3 ./scripts/cloud/push_curated.py --workspace ./tests/fixture-workspace
+          python3 ./scripts/cloud/push_curated.py --workspace ./tests/fixture-workspace --commit
           # Assert row count
           python - <<'PY'
 import os, psycopg
@@ -97,3 +100,5 @@ with psycopg.connect(url) as con:
   assert c>=1, c
 print('ok')
 PY
+          # Smoke retrieval with cloud fallback
+          OPENCLAW_WORKSPACE=./tests/fixture-workspace ./scripts/memory-retrieve.sh auto "vector-api.service" | head -n 50
