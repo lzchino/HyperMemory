@@ -22,3 +22,9 @@ jobs:
 
       - name: Compile python
         run: python -m compileall scripts
+
+      - name: Smoke test (SQLite index + eval)
+        run: |
+          ./scripts/install.sh --embeddings-only
+          ./scripts/memory-index.sh || true
+          ./scripts/memory-eval.sh ./tests/fixture-workspace --fast

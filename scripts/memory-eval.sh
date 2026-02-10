@@ -48,6 +48,13 @@ if [[ ! -x "$RETRIEVE" ]]; then
   fi
 fi
 if [[ ! -x "$RETRIEVE" ]]; then
+  # Allow running eval on a workspace fixture without installing scripts into it.
+  ROOT_SELF="$(cd "$(dirname "$0")/.." && pwd)"
+  if [[ -x "$ROOT_SELF/scripts/memory-retrieve.sh" ]]; then
+    RETRIEVE="$ROOT_SELF/scripts/memory-retrieve.sh"
+  fi
+fi
+if [[ ! -x "$RETRIEVE" ]]; then
   echo "Retrieve script not found/executable: $RETRIEVE" >&2
   exit 2
 fi

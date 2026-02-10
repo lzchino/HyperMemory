@@ -38,7 +38,10 @@ Next steps:
    # Force CPU if needed:
    EMBED_DEVICE=cpu ./scripts/run-embeddings.sh
 
-4) Run demo / benchmark:
+4) (Optional) Install Clawdbot hook example:
+   cp -r hooks/fortress-lite-guard /path/to/your/clawdbot/workspace/hooks/
+
+5) Run demo / benchmark:
    ./docs/demo.md
    ./scripts/benchmark.sh .
 
