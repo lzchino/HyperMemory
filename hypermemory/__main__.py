@@ -48,9 +48,13 @@ def cmd_index(args: argparse.Namespace) -> int:
 
 
 def cmd_retrieve(args: argparse.Namespace) -> int:
+    from .retrieval import retrieve
+
     cfg = Config.from_env(args.workspace)
-    script = Path(__file__).resolve().parent.parent / "scripts" / "memory-retrieve.sh"
-    return _run(["bash", str(script), args.mode, args.query])
+    hits = retrieve(cfg.workspace, args.query, mode=args.mode, limit=10)
+    for h in hits:
+        print(f"[{h.layer}] {h.snippet}")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -129,6 +129,43 @@ class BuildResult:
     docs_indexed: int
 
 
+@dataclass
+class FtsHit:
+    source: str
+    source_key: str
+    chunk_ix: int
+    text: str
+
+
+def search(workspace: Path, query: str, limit: int = 20) -> list[FtsHit]:
+    ws = workspace.resolve()
+    db = ws / "memory" / "supermemory.sqlite"
+    if not db.exists():
+        return []
+
+    # FTS5 phrase query; escape quotes
+    q_esc = query.replace('"', '""')
+    match = f'"{q_esc}"'
+
+    con = sqlite3.connect(str(db))
+    try:
+        cur = con.execute(
+            """
+            SELECT source, source_key, chunk_ix, substr(text,1,220)
+            FROM entry_fts
+            WHERE entry_fts MATCH ?
+            ORDER BY rank
+            LIMIT ?;
+            """,
+            (match, int(limit)),
+        )
+        rows = cur.fetchall()
+    finally:
+        con.close()
+
+    return [FtsHit(str(r[0]), str(r[1]), int(r[2]), str(r[3])) for r in rows]
+
+
 def build_index(workspace: Path, force: bool = False, full_rebuild: bool = False) -> BuildResult:
     ws = workspace.resolve()
     db = ws / "memory" / "supermemory.sqlite"
