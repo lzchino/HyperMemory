@@ -23,6 +23,11 @@ __pycache__/
 # Node/npm
 node_modules/
 
+# Local dev venv / packaging
+.venv/
+.venv-*/
+*.egg-info/
+
 # DB artifacts
 *.sqlite
 

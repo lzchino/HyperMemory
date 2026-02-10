@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hypermemory"
+version = "0.0.0"
+description = "HyperMemory: local-first memory system for Clawdbot/OpenClaw agents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "lz_chino"}]
+
+dependencies = [
+  "psycopg[binary]>=3.2",
+  "pgvector>=0.3.6",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+  "sentence-transformers>=2.6",
+]
+
+[project.scripts]
+hypermemory = "hypermemory.__main__:main"
+
+[tool.setuptools]
+packages = ["hypermemory"]
