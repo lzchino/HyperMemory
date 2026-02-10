@@ -63,6 +63,39 @@ def cmd_retrieve(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_cloud(args: argparse.Namespace) -> int:
+    from .cloud_pgvector import CloudConfig, commit_payload, init_schema, prepare_payload, pull_curated, search_curated
+
+    cfg = Config.from_env(args.workspace)
+    ccfg = CloudConfig.from_env()
+
+    if args.action == "init":
+        init_schema(ccfg)
+        print("OK")
+        return 0
+
+    if args.action == "push":
+        if args.commit:
+            n = commit_payload(cfg.workspace, ccfg)
+            print(f"pushed={n}")
+            return 0
+        p = prepare_payload(cfg.workspace, ccfg)
+        print(str(p))
+        return 0
+
+    if args.action == "pull":
+        p = pull_curated(cfg.workspace, ccfg, limit=args.limit)
+        print(str(p))
+        return 0
+
+    if args.action == "search":
+        for line in search_curated(ccfg, args.query, limit=args.limit):
+            print(line)
+        return 0
+
+    raise SystemExit("unknown cloud action")
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="hypermemory")
     p.add_argument("--workspace", help="Workspace root (default: OPENCLAW_WORKSPACE or cwd)")
@@ -82,6 +115,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("mode", choices=["auto", "targeted", "broad"])
     s.add_argument("query")
     s.set_defaults(func=cmd_retrieve)
+
+    s = sub.add_parser("cloud", help="Cloud L3 (BYO pgvector) commands")
+    s.add_argument("action", choices=["init", "push", "pull", "search"])
+    s.add_argument("--commit", action="store_true", help="For push: actually commit to cloud")
+    s.add_argument("--limit", type=int, default=200)
+    s.add_argument("--query", default="")
+    s.set_defaults(func=cmd_cloud)
 
     return p
 
