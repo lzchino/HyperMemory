@@ -91,7 +91,11 @@ cd HyperMemory
 ### 2) Install Python deps
 
 ```bash
+# full install (includes sentence-transformers)
 ./scripts/install.sh
+
+# lightweight (no sentence-transformers; good for CI + FTS/entity + pgvector with fake embeddings)
+./scripts/install.sh --embeddings-only
 ```
 
 ### 3) Start Postgres+pgvector

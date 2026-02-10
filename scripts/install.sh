@@ -19,7 +19,16 @@ python3 -m venv "$VENV"
 source "$VENV/bin/activate"
 
 pip install -U pip wheel >/dev/null
-pip install -r "$ROOT/requirements.txt"
+# Base runtime deps
+pip install -r "$ROOT/requirements-core.txt" >/dev/null
+
+# Lightweight HTTP server deps (used by fake_embed_server in CI and optional services)
+pip install -r "$ROOT/requirements-web.txt" >/dev/null
+
+# Heavy ML deps (optional)
+if ! $EMBED_ONLY; then
+  pip install -r "$ROOT/requirements-embeddings.txt" >/dev/null
+fi
 
 # Install this package (provides `hypermemory` CLI)
 pip install -e "$ROOT" >/dev/null
