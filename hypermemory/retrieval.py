@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from .bm25 import search as bm25_search
 from .fts import FtsHit, search as fts_search
 
 
@@ -27,29 +27,10 @@ def detect_mode(query: str) -> str:
     return "broad"
 
 
-def bm25_search(workspace: Path, query: str, limit: int = 10) -> list[RetrievalHit]:
-    script = Path(__file__).resolve().parent.parent / "scripts" / "retrieval" / "bm25_search.py"
-    if not script.exists():
-        return []
-    p = subprocess.run(
-        ["python3", str(script), "--repo", str(workspace), query, "--limit", str(limit)],
-        capture_output=True,
-        text=True,
-    )
-    out = p.stdout.strip()
-    if not out:
-        return []
+def bm25_layer(workspace: Path, query: str, limit: int = 10) -> list[RetrievalHit]:
     hits: list[RetrievalHit] = []
-    for line in out.splitlines():
-        parts = line.split("\t", 2)
-        if len(parts) != 3:
-            continue
-        score_s, path, snippet = parts
-        try:
-            score = float(score_s)
-        except Exception:
-            score = 0.0
-        hits.append(RetrievalHit(layer=f"bm25:{path}", score=score, snippet=snippet))
+    for h in bm25_search(workspace, query, limit=limit):
+        hits.append(RetrievalHit(layer=f"bm25:{h.path}", score=float(h.score), snippet=h.snippet))
     return hits
 
 
@@ -65,7 +46,7 @@ def retrieve(workspace: Path, query: str, mode: str = "auto", limit: int = 10) -
     # We intentionally do NOT index raw dailies semantically; only curated+distilled in future refactor.
 
     # 3) BM25 fallback
-    bm25_hits = bm25_search(ws, query, limit=limit)
+    bm25_hits = bm25_layer(ws, query, limit=limit)
 
     # Basic fusion: prefer FTS first, then BM25
     fused: list[RetrievalHit] = []
